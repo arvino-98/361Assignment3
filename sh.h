@@ -11,6 +11,8 @@ char *where(char *command, struct pathelement *pathlist);
 void list ( char *dir );
 void printenv(char **envp);
 void checkWildcard(char ** args);
+int endsInAmpersand(char **args);
+void sigchld_handler(int sig);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

@@ -201,7 +201,7 @@ int sh( int argc, char **argv, char **envp )
           commandpath = which(command, pathlist);
         }
         /* do fork(), execve() and waitpid() */
-        if (commandpath != NULL){
+        if (commandpath != NULL && endsInAmpersand(args) == 0){
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
             perror("Fork error");
@@ -217,6 +217,28 @@ int sh( int argc, char **argv, char **envp )
             perror("Wait error");
           }
           free(commandpath);
+        }
+        else if (commandpath != NULL && endsInAmpersand(args) == 1){
+          printf("ends in &\n");
+          args[1]= NULL;
+          printf("Executing: %s\n", command);
+          if ((pid = fork()) < 0) {
+            perror("Fork error");
+  		    }
+          /* child */
+          else if (pid == 0) {
+            execv(commandpath, args);
+            perror("Couldn't execute");
+            kill(pid, SIGCHLD);
+            exit(127);
+          }
+          /* parent */
+  		    signal(SIGCHLD, sigchld_handler);
+          /*
+          if ((pid = waitpid(pid, &status, WNOHANG)) < 0){
+            perror("Wait error");
+          }
+          */
         }
         else {
           fprintf(stderr, "%s: Command not found.\n", args[0]);
@@ -288,3 +310,21 @@ void list (char *dir)
   }
   free(dirLoc);
 } /* list() */
+
+int endsInAmpersand(char **args){
+  int i = 0;
+  while (args[i + 1] != NULL){
+    i++;
+  }
+  if (strcmp(args[i], "&") == 0){
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+void sigchld_handler(int sig){
+  signal(SIGCHLD, sigchld_handler);
+  waitpid(-1, NULL, WNOHANG);
+}
