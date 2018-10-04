@@ -15,7 +15,7 @@ int endsInAmpersand(char **args);
 void sigchld_handler(int sig);
 void redirectToScreen();
 int redirectPosition(char **args);
-void checkRedirect(char *redirectSymbol, char *filename);
+void checkRedirect(char *redirectSymbol, char *filename, int noclobber);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

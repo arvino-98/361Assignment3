@@ -54,6 +54,8 @@ int sh( int argc, char **argv, char **envp )
   initPrevDirectory();
   // initialize our variable in builtins.c keeping track of the environment
   initEnvp(envp);
+  // initialize noclobber to 0
+  int noclobber = 0;
 
   while ( go )
   {
@@ -92,7 +94,7 @@ int sh( int argc, char **argv, char **envp )
       // chcek for redirect
       int redirectAt = redirectPosition(args);
       if (args[redirectAt + 1] != NULL){
-        checkRedirect(args[redirectAt], args[redirectAt + 1]);
+        checkRedirect(args[redirectAt], args[redirectAt + 1], noclobber);
         // set the argument where the redirect symbol is at to NULL
         args[redirectAt] = NULL;
       }
@@ -183,6 +185,10 @@ int sh( int argc, char **argv, char **envp )
       else if (isBuiltIn(command, args)){
         printf("Executing built-in: %s\n", command);
         getBuiltInPtr(command, args);
+      }
+      else if (strcmp(command, "noclobber") == 0){
+        if (noclobber == 0){noclobber = 1;}
+        else{noclobber = 0;}
       }
       // end checking built-ins
 
@@ -356,34 +362,41 @@ int redirectPosition(char **args){
     i++;
   }
 }
-void checkRedirect(char *redirectSymbol, char *filename){
-  int fid;
-  if (strcmp(redirectSymbol, ">") == 0){
-    fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-    close(1);
-    dup(fid);
-    close(fid);
+void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
+  if (noclobber == 0){
+    int fid;
+    if (strcmp(redirectSymbol, ">") == 0){
+      if (noclobber == 0){
+        fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+        close(1);
+        dup(fid);
+        close(fid);
+      }
+    }
+    else if (strcmp(redirectSymbol, ">&") == 0){
+      fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+      close(1);
+      close(2);
+      dup(fid);
+      dup(fid);
+      close(fid);
+    }
+    else if (strcmp(redirectSymbol, ">>") == 0){
+      fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+      close(1);
+      dup(fid);
+      close(fid);
+    }
+    else if (strcmp(redirectSymbol, ">>&") == 0){
+      fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+      close(1);
+      close(2);
+      dup(fid);
+      dup(fid);
+      close(fid);
+    }
   }
-  else if (strcmp(redirectSymbol, ">&") == 0){
-    fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-    close(1);
-    close(2);
-    dup(fid);
-    dup(fid);
-    close(fid);
-  }
-  else if (strcmp(redirectSymbol, ">>") == 0){
-    fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
-    close(1);
-    dup(fid);
-    close(fid);
-  }
-  else if (strcmp(redirectSymbol, ">>&") == 0){
-    fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
-    close(1);
-    close(2);
-    dup(fid);
-    dup(fid);
-    close(fid);
+  else {
+    printf("no clobber is 1. No file overwriting or creating allowed.\n");
   }
 }
