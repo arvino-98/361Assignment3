@@ -14,7 +14,8 @@ void checkWildcard(char ** args);
 int endsInAmpersand(char **args);
 void sigchld_handler(int sig);
 void redirectToScreen();
-int checkRedirect(char **args);
+int redirectPosition(char **args);
+void checkRedirect(char *redirectSymbol, char *filename);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

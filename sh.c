@@ -57,6 +57,7 @@ int sh( int argc, char **argv, char **envp )
 
   while ( go )
   {
+    // redirect output back to screen in case it was changed
     redirectToScreen();
     /* print your prompt */
     char *cwd = getcwd(NULL, 0);
@@ -88,10 +89,12 @@ int sh( int argc, char **argv, char **envp )
       // insert command into history list
       insert(command);
 
-      int redirectAt;
-      if ((redirectAt = checkRedirect(args)) != 0){
+      // chcek for redirect
+      int redirectAt = redirectPosition(args);
+      if (args[redirectAt + 1] != NULL){
+        checkRedirect(args[redirectAt], args[redirectAt + 1]);
+        // set the argument where the redirect symbol is at to NULL
         args[redirectAt] = NULL;
-        //args[redirectAt + 1] = NULL;
       }
 
       // check if command is an alias
@@ -210,6 +213,7 @@ int sh( int argc, char **argv, char **envp )
         }
         /* do fork(), execve() and waitpid() */
         int ampersandAt = -1;
+        // if there is no ampersand, execute normally
         if (commandpath != NULL && endsInAmpersand(args) == 0){
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
@@ -227,6 +231,7 @@ int sh( int argc, char **argv, char **envp )
           }
           free(commandpath);
         }
+        // if there is an ampersand, execute in background
         else if (commandpath != NULL && (ampersandAt=endsInAmpersand(args) != 0)){
           printf("ends in &\n");
           args[ampersandAt] = NULL;
@@ -243,11 +248,6 @@ int sh( int argc, char **argv, char **envp )
           }
           /* parent */
   		    signal(SIGCHLD, sigchld_handler);
-          /*
-          if ((pid = waitpid(pid, &status, WNOHANG)) < 0){
-            perror("Wait error");
-          }
-          */
         }
         else {
           fprintf(stderr, "%s: Command not found.\n", args[0]);
@@ -347,28 +347,43 @@ void redirectToScreen(){
   close(fid);
 }
 
-int checkRedirect(char **args){
-  int fid;
+int redirectPosition(char **args){
   int i = 0;
   while (args[i] != NULL){
-    if (strcmp(args[i], ">") == 0){
-      fid = open("testoutputredirect", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-      close(1);
-      dup(fid);
-      close(fid);
+    if (args[i][0] == '>' || args[i][0] == '<'){
       return i;
     }
-    else if (strcmp(args[i], ">&") == 0){
-      fid = open("testoutputredirect", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-      close(1);
-      close(2);
-      dup(fid);
-      dup(fid);
-      close(fid);
-      return i;
-    }
-
     i++;
   }
-  return 0;
+}
+void checkRedirect(char *redirectSymbol, char *filename){
+  int fid;
+  if (strcmp(redirectSymbol, ">") == 0){
+    fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+    close(1);
+    dup(fid);
+    close(fid);
+  }
+  else if (strcmp(redirectSymbol, ">&") == 0){
+    fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+    close(1);
+    close(2);
+    dup(fid);
+    dup(fid);
+    close(fid);
+  }
+  else if (strcmp(redirectSymbol, ">>") == 0){
+    fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+    close(1);
+    dup(fid);
+    close(fid);
+  }
+  else if (strcmp(redirectSymbol, ">>&") == 0){
+    fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+    close(1);
+    close(2);
+    dup(fid);
+    dup(fid);
+    close(fid);
+  }
 }
