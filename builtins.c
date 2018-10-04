@@ -8,6 +8,7 @@ not already defined in sh.c
 #include "history.h"
 #include "alias.h"
 #include "sh.h"
+#include "watchmail.h"
 #include <signal.h>
 int histToPrint = 10;
 char* prevDirectory;
@@ -23,7 +24,9 @@ const char* BUILT_IN_COMMANDS[] = {
   "kill",
   "printenv",
   "setenv",
-  "alias"
+  "alias",
+  "watchuser",
+  "watchmail"
 };
 // array of char* that keep track of function pointers of our buil-in commands
 // mapped 1 to 1 to function pointers in above array BUILT_IN_COMMANDS
@@ -35,7 +38,9 @@ void (*BUILT_IN_COMMANDS_PTR[])(char** args) = {
   bic_kill,
   bic_printenv,
   bic_setenv,
-  bic_alias
+  bic_alias,
+  bic_watchuser,
+  bic_watchmail
 };
 
 // initialize previous directory to the current directory
@@ -214,4 +219,20 @@ void bic_alias(char **args){
   else{
     insertAlias(args);
   }
+}
+
+void bic_watchuser(char **args){
+  struct utmpx *up;
+  setutxent();			/* start at beginning */
+  while (up = getutxent())	/* get an entry */
+  {
+    if ( up->ut_type == USER_PROCESS )	/* only care about users */
+    {
+      printf("%s has logged on %s from %s\n", up->ut_user, up->ut_line, up ->ut_host);
+    }
+  }
+}
+
+void bic_watchmail(char **args){
+  printf("\a");
 }

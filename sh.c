@@ -21,6 +21,7 @@ built-in command code
 #include "builtins.h"
 #include "history.h"
 #include "alias.h"
+#include "watchmail.h"
 #define BUFFERSIZE 128
 
 int sh( int argc, char **argv, char **envp )
@@ -93,11 +94,14 @@ int sh( int argc, char **argv, char **envp )
 
       // chcek for redirect
       int redirectAt = redirectPosition(args);
+      // We check redirect + 1 to make sure the user has specified
+      // some kind of filename
       if (args[redirectAt + 1] != NULL){
         checkRedirect(args[redirectAt], args[redirectAt + 1], noclobber);
         // set the argument where the redirect symbol is at to NULL
         args[redirectAt] = NULL;
       }
+      // end checking redirect
 
       // check if command is an alias
       if (aliasHead != NULL){
@@ -180,15 +184,16 @@ int sh( int argc, char **argv, char **envp )
           list(args[1]);
         }
       }
-
+      // set noclobber to 1 if 0, 0 if 1
+      // When 1, no overwrite or creation is allowed. If 0, they are allowed
+      else if (strcmp(command, "noclobber") == 0){
+        if (noclobber == 0){noclobber = 1;}
+        else{noclobber = 0;}
+      }
       // check if one of the other built-ins
       else if (isBuiltIn(command, args)){
         printf("Executing built-in: %s\n", command);
         getBuiltInPtr(command, args);
-      }
-      else if (strcmp(command, "noclobber") == 0){
-        if (noclobber == 0){noclobber = 1;}
-        else{noclobber = 0;}
       }
       // end checking built-ins
 

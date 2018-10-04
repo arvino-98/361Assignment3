@@ -9,6 +9,8 @@ builtins.h
 #include <sys/types.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <utmpx.h>
+
 
 void initPrevDirectory();
 void freePrevDirectory();
@@ -26,3 +28,5 @@ void bic_printenv(char **args);
 void bic_setenv(char **args);
 void prompt(char **args);
 void bic_alias(char **args);
+void bic_watchuser(char **args);
+void bic_watchmail(char **args);
