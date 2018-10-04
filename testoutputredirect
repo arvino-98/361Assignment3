@@ -1,0 +1,2 @@
+Executing: ls
+ls: cannot access 'a': No such file or directory

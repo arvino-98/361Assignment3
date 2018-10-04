@@ -13,6 +13,8 @@ void printenv(char **envp);
 void checkWildcard(char ** args);
 int endsInAmpersand(char **args);
 void sigchld_handler(int sig);
+void redirectToScreen();
+int checkRedirect(char **args);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

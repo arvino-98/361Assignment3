@@ -12,6 +12,7 @@ built-in command code
 #include <stdlib.h>
 #include <pwd.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
@@ -56,6 +57,7 @@ int sh( int argc, char **argv, char **envp )
 
   while ( go )
   {
+    redirectToScreen();
     /* print your prompt */
     char *cwd = getcwd(NULL, 0);
     printf("%s[%s]%s",prompt,cwd,">");
@@ -85,6 +87,12 @@ int sh( int argc, char **argv, char **envp )
     if (command != NULL){
       // insert command into history list
       insert(command);
+
+      int redirectAt;
+      if ((redirectAt = checkRedirect(args)) != 0){
+        args[redirectAt] = NULL;
+        //args[redirectAt + 1] = NULL;
+      }
 
       // check if command is an alias
       if (aliasHead != NULL){
@@ -201,6 +209,7 @@ int sh( int argc, char **argv, char **envp )
           commandpath = which(command, pathlist);
         }
         /* do fork(), execve() and waitpid() */
+        int ampersandAt = -1;
         if (commandpath != NULL && endsInAmpersand(args) == 0){
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
@@ -218,9 +227,9 @@ int sh( int argc, char **argv, char **envp )
           }
           free(commandpath);
         }
-        else if (commandpath != NULL && endsInAmpersand(args) == 1){
+        else if (commandpath != NULL && (ampersandAt=endsInAmpersand(args) != 0)){
           printf("ends in &\n");
-          args[1]= NULL;
+          args[ampersandAt] = NULL;
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
             perror("Fork error");
@@ -317,7 +326,7 @@ int endsInAmpersand(char **args){
     i++;
   }
   if (strcmp(args[i], "&") == 0){
-    return 1;
+    return i;
   }
   else {
     return 0;
@@ -327,4 +336,39 @@ int endsInAmpersand(char **args){
 void sigchld_handler(int sig){
   signal(SIGCHLD, sigchld_handler);
   waitpid(-1, NULL, WNOHANG);
+}
+
+void redirectToScreen(){
+  int fid = open("/dev/tty", O_WRONLY);
+  close(1);
+  close(2);
+  dup(fid);
+  dup(fid);
+  close(fid);
+}
+
+int checkRedirect(char **args){
+  int fid;
+  int i = 0;
+  while (args[i] != NULL){
+    if (strcmp(args[i], ">") == 0){
+      fid = open("testoutputredirect", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+      close(1);
+      dup(fid);
+      close(fid);
+      return i;
+    }
+    else if (strcmp(args[i], ">&") == 0){
+      fid = open("testoutputredirect", O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+      close(1);
+      close(2);
+      dup(fid);
+      dup(fid);
+      close(fid);
+      return i;
+    }
+
+    i++;
+  }
+  return 0;
 }

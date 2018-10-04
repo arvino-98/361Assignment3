@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
   while (i < 20) {
     //printf("child is asleep...(%d)\n", i++);
-    sleep(10);
+    sleep(1);
     i++;
   }
   exit(0);
