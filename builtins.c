@@ -234,5 +234,52 @@ void bic_watchuser(char **args){
 }
 
 void bic_watchmail(char **args){
-  printf("\a");
+  int start;
+  char *file;
+
+  // if not enough or too many arguments
+  if (args[1] == NULL || args[3] != NULL){
+    printf("Invalid arguments.");
+    return;
+  }
+
+  if (access(args[1], F_OK) == -1){
+    return;
+  }
+
+  file = (char*)malloc(strlen(args[1]) + 1);
+  strcpy(file, args[1]);
+
+  // if called with just 1 argument, we can set start to true
+  if (args[2] == NULL){
+    start = 0;
+  }
+  // if called with more than one
+  else if (args[2] != NULL){
+    // we check if it specifies 'on' or 'off' and set start accordingly
+    if(strcmp(args[2], "on") == 0){
+      start = 0;
+    }
+    else if(strcmp(args[2], "off") == 0){
+      start = 1;
+    }
+    else {
+      fprintf(stderr, "Invalid command. Third arguments specifies 'on' or 'off'\n");
+      return;
+    }
+  }
+
+  // if start is true, we call control_watchmail to start a new thread
+  if (start == 0){
+    printf("Starting watchmail for %s\n", file);
+    control_watchmail(file,start);
+  }
+  // if start is false, we call control_watchmail to stop a thread
+  else if (start == 1){
+    printf("Stopping watchmail for %s\n", file);
+    control_watchmail(file,start);
+  }
+
+
+
 }

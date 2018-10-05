@@ -10,8 +10,8 @@ typedef struct watchmailElement {
 
 typedef struct watchmailElement watchMailList;
 
-watchMailList *watchmails;
+watchmailElement *watchmailHead;
 
-int control_watchmail();
+void control_watchmail(char *file, int start);
 
 void* watchmail_thread(void*);
