@@ -8,10 +8,8 @@ typedef struct watchmailElement {
   struct watchmailElement* next; ///< Pointer to next node
 }watchmailElement;
 
-typedef struct watchmailElement watchMailList;
-
 watchmailElement *watchmailHead;
 
 void control_watchmail(char *file, int start);
 
-void* watchmail_thread(void*);
+void* watchmail_thread(void *param);

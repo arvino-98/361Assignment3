@@ -3,13 +3,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
- #include <sys/time.h>
-  #include <unistd.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 void control_watchmail(char *file, int start){
   // if disable is false we create a new watchmail and thread
   if (start == 0){
-    watchMailList *new_node = (watchMailList*)malloc(sizeof(watchMailList));
+    watchmailElement *new_node = (watchmailElement*)malloc(sizeof(watchmailElement));
     new_node->filename = file;
     new_node->next = watchmailHead;
     watchmailHead = new_node;
@@ -18,8 +18,8 @@ void control_watchmail(char *file, int start){
   }
   // else disable is true so we move thru the list to find the node to disable
   else if (start == 1) {
-    watchMailList *prev = NULL;
-    watchMailList *temp = watchmailHead;
+    watchmailElement *prev = NULL;
+    watchmailElement *temp = watchmailHead;
     // move thru list searching for node
     while (temp != NULL){
       if (strcmp(temp->filename, file) == 0){

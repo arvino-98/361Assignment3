@@ -9,6 +9,7 @@ not already defined in sh.c
 #include "alias.h"
 #include "sh.h"
 #include "watchmail.h"
+#include "watchuser.h"
 #include <signal.h>
 int histToPrint = 10;
 char* prevDirectory;
@@ -222,14 +223,46 @@ void bic_alias(char **args){
 }
 
 void bic_watchuser(char **args){
-  struct utmpx *up;
-  setutxent();			/* start at beginning */
-  while (up = getutxent())	/* get an entry */
-  {
-    if ( up->ut_type == USER_PROCESS )	/* only care about users */
-    {
-      printf("%s has logged on %s from %s\n", up->ut_user, up->ut_line, up ->ut_host);
+  // if thread not running yet, start it
+  if (threadRunning == 0){
+    printf("Starting new thread.\n");
+    watchuserThread = pthread_create(&watchuserThread, NULL, watchuser_thread, NULL);
+    threadRunning = 1;
+  }
+  // if given 3 arguments
+  if (args[2] != NULL){
+    // check if it's 'off'
+    if (strcmp(args[2], "off") == 0){
+      watchuserElement *prev = NULL;
+      watchuserElement *temp = watchuserHead;
+      // and if it is, find the username matching args[1]
+      // and remove it from the list and free memory
+      while (temp != NULL){
+        if (strcmp(args[1], temp->username) == 0){
+          if (prev != NULL) {prev->next = temp->next;}
+          else {watchuserHead = temp->next;}
+          free(temp->username);
+          free(temp);
+          break;
+        }
+        prev = temp;
+        temp = temp->next;
+      }
     }
+    else {
+      printf("Specify 'off' for third arg if you want to stop watching user.\n");
+    }
+  }
+  // if called with 1 argument, add the name to the linked list
+  else if (args[1] != NULL){
+    watchuserElement *new_node = (watchuserElement*)malloc(sizeof(watchuserElement));
+    new_node->username = (char*)malloc(strlen(args[1]) + 1);
+    strcpy(new_node->username, args[1]);
+    new_node->next = watchuserHead;
+    watchuserHead = new_node;
+  }
+  else {
+    printf("Invalid arguments.\n");
   }
 }
 

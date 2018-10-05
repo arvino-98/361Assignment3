@@ -83,3 +83,31 @@ SESSION_MANAGER=local/arvindual-GA-78LMT-USB3:@/tmp/.ICE-unix/3859,unix/arvindua
 LESSOPEN=| /usr/bin/lesspipe %s
 GTK_IM_MODULE=ibus
 _=./mysh
+Executing: ls
+alias.c
+alias.h
+a.out
+builtins.c
+builtins.h
+get_path.c
+get_path.h
+get_path_main.c
+get_path.o
+history.c
+history.h
+main.c
+Makefile
+mysh
+README.md
+sh.c
+sh.h
+sh.o
+sleep
+sleep.c
+watchmail.c
+watchmail.h
+watchmailtest
+watchuser.c
+watchuser.h
+zombie
+zombie.c

@@ -10,7 +10,7 @@ builtins.h
 #include <dirent.h>
 #include <ctype.h>
 #include <utmpx.h>
-
+#include <pthread.h>
 
 void initPrevDirectory();
 void freePrevDirectory();
