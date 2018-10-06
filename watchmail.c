@@ -73,7 +73,7 @@ void *watchmail_thread(void *param){
     if (stat_info.st_size > last_size){
       struct timeval tp;
       gettimeofday(&tp, NULL);
-      printf("\n\aYou've Got Mail in [%s] at [%s]\n", filename, ctime(&(tp.tv_sec)));
+      printf("\n\aYou've Got Mail in [%s] at %s", filename, ctime(&(tp.tv_sec)));
     }
     // update last_size
     last_size = stat_info.st_size;

@@ -96,10 +96,12 @@ int sh( int argc, char **argv, char **envp )
       int redirectAt = redirectPosition(args);
       // We check redirect + 1 to make sure the user has specified
       // some kind of filename
-      if (args[redirectAt + 1] != NULL){
-        checkRedirect(args[redirectAt], args[redirectAt + 1], noclobber);
-        // set the argument where the redirect symbol is at to NULL
-        args[redirectAt] = NULL;
+      if (redirectAt != -1){
+        if (args[redirectAt + 1] != NULL){
+          checkRedirect(args[redirectAt], args[redirectAt + 1], noclobber);
+          // set the argument where the redirect symbol is at to NULL
+          args[redirectAt] = NULL;
+        }
       }
       // end checking redirect
 
@@ -243,7 +245,7 @@ int sh( int argc, char **argv, char **envp )
           free(commandpath);
         }
         // if there is an ampersand, execute in background
-        else if (commandpath != NULL && (ampersandAt=endsInAmpersand(args) != 0)){
+        else if (commandpath != NULL && ((ampersandAt=endsInAmpersand(args)) != 0)){
           printf("ends in &\n");
           args[ampersandAt] = NULL;
           printf("Executing: %s\n", command);
@@ -366,6 +368,7 @@ int redirectPosition(char **args){
     }
     i++;
   }
+  return -1;
 }
 void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
   if (noclobber == 0){
@@ -387,13 +390,13 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
       close(fid);
     }
     else if (strcmp(redirectSymbol, ">>") == 0){
-      fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+      fid = open(filename, O_CREAT|O_APPEND|O_WRONLY, S_IRWXU);
       close(1);
       dup(fid);
       close(fid);
     }
     else if (strcmp(redirectSymbol, ">>&") == 0){
-      fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU);
+      fid = open(filename, O_CREAT|O_APPEND|O_WRONLY, S_IRWXU);
       close(1);
       close(2);
       dup(fid);
