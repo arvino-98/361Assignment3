@@ -57,11 +57,16 @@ int sh( int argc, char **argv, char **envp )
   initEnvp(envp);
   // initialize noclobber to 0
   int noclobber = 0;
+  // copy of stdin
+  int stdin_copy = dup(0);
 
   while ( go )
   {
-    // redirect output back to screen in case it was changed
+    // redirect input and output back to standard in case of change
+    close(0);
+    dup(stdin_copy);
     redirectToScreen();
+
     /* print your prompt */
     char *cwd = getcwd(NULL, 0);
     printf("%s[%s]%s",prompt,cwd,">");
@@ -353,8 +358,10 @@ void sigchld_handler(int sig){
 
 void redirectToScreen(){
   int fid = open("/dev/tty", O_WRONLY);
+  //close(0);
   close(1);
   close(2);
+  //dup(fid);
   dup(fid);
   dup(fid);
   close(fid);
@@ -400,6 +407,13 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
       close(1);
       close(2);
       dup(fid);
+      dup(fid);
+      close(fid);
+    }
+    else if(strcmp(redirectSymbol, "<") == 0){
+      fid = open(filename, O_RDONLY, S_IRUSR);
+      close(0);
+      fflush(0);
       dup(fid);
       close(fid);
     }
