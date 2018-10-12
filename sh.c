@@ -203,7 +203,7 @@ int sh( int argc, char **argv, char **envp )
           list(args[1]);
         }
       }
-      // set noclobber to 1 if 0, 0 if 1
+      // set noclobber to the opposite value
       // When 1, no overwrite or creation is allowed. If 0, they are allowed
       else if (strcmp(command, "noclobber") == 0){
         if (noclobber == 0){noclobber = 1;}
@@ -241,10 +241,12 @@ int sh( int argc, char **argv, char **envp )
         else if (command[0] != '.' && command[0] != '/'){
           commandpath = which(command, pathlist);
         }
-        /* do fork(), execve() and waitpid() */
+
+        /* now do fork(), execve() and waitpid() */
+        // init ampersandPosition to -1
         int ampersandAt = -1;
         // if there is no ampersand, execute normally
-        if (commandpath != NULL && endsInAmpersand(args) == 0){
+        if (commandpath != NULL && endsInAmpersand(args) == -1){
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
             perror("Fork error");
@@ -261,9 +263,11 @@ int sh( int argc, char **argv, char **envp )
           }
           free(commandpath);
         }
+        // end normal execution
+
         // if there is an ampersand, execute in background
-        else if (commandpath != NULL && ((ampersandAt=endsInAmpersand(args)) != 0)){
-          printf("ends in &\n");
+        else if (commandpath != NULL && ((ampersandAt=endsInAmpersand(args)) != -1)){
+          //printf("ends in &\n");
           args[ampersandAt] = NULL;
           printf("Executing: %s\n", command);
           if ((pid = fork()) < 0) {
@@ -279,6 +283,8 @@ int sh( int argc, char **argv, char **envp )
           /* parent */
   		    signal(SIGCHLD, sigchld_handler);
         }
+        // end ampersand background execution
+
         else {
           fprintf(stderr, "%s: Command not found.\n", args[0]);
         }
@@ -338,7 +344,7 @@ void list (char *dir)
       return;
     }
   }
-  else{// else set dir to current working directory
+  else{ // else set dir to current working directory
     char *cwd = getcwd(NULL, 0);
     dirLoc = opendir(cwd);
     free(cwd);
@@ -350,6 +356,7 @@ void list (char *dir)
   free(dirLoc);
 } /* list() */
 
+// if args array ends in ampersand, returns its index, else returns -1
 int endsInAmpersand(char **args){
   int i = 0;
   while (args[i + 1] != NULL){
@@ -359,7 +366,7 @@ int endsInAmpersand(char **args){
     return i;
   }
   else {
-    return 0;
+    return -1;
   }
 }
 
@@ -368,6 +375,7 @@ void sigchld_handler(int sig){
   waitpid(-1, NULL, WNOHANG);
 }
 
+// redirects stdout and stderr back to screen
 void redirectToScreen(){
   int fid = open("/dev/tty", O_WRONLY);
   close(1);
@@ -377,6 +385,7 @@ void redirectToScreen(){
   close(fid);
 }
 
+// return the position of a redirect symbol, else -1 if none is present
 int redirectPosition(char **args){
   int i = 0;
   while (args[i] != NULL){
@@ -387,6 +396,8 @@ int redirectPosition(char **args){
   }
   return -1;
 }
+
+// closes and opens proper file descriptors according to redirect symbols
 void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
   if (noclobber == 0){
     int fid;
@@ -433,6 +444,7 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
   }
 }
 
+// return the position of a ipc symbol, else -1 if none is present
 int ipcPosition(char **args){
   int i = 0;
   while (args[i] != NULL){
@@ -443,15 +455,37 @@ int ipcPosition(char **args){
   }
   return -1;
 }
+
+// cuts args array at the given index. values before the index go into leftArgs,
+// values after the index go into rightArgs
 void cutArray(char **leftArgs, char **rightArgs, char **args, int index){
   int argsSize = 0;
   while (args[argsSize] != NULL){
     argsSize++;
   }
 
-  //char **leftArgsTmp = malloc((argsSize/2) * sizeof(char *));
-  //char **rightArgsTmp = malloc((argsSize/2) * sizeof(char *));
-
   memcpy(leftArgs, args, (argsSize/2) * sizeof(char *));
   memcpy(rightArgs, args + index + 1, (argsSize/2) * sizeof(char *));
+}
+void executeIPC(char **leftArgs, char **rightArgs){
+  int fid;
+  int filedes[2];
+
+  if (pipe(filedes) == -1){
+    perror("Error creating pipe");
+    return;
+  }
+
+  // redirect stdin
+  close(0);
+  dup(filedes[0]);
+  close(filedes[0]);
+
+  // Redirect stdout
+  close(1);
+  dup(filedes[1]);
+
+  close(filedes[1]);
+
+  
 }
