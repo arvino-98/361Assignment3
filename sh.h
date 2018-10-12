@@ -16,6 +16,8 @@ void sigchld_handler(int sig);
 void redirectToScreen();
 int redirectPosition(char **args);
 void checkRedirect(char *redirectSymbol, char *filename, int noclobber);
+int ipcPosition(char **args);
+void cutArray(char **leftArgs, char **rightArgs, char **args, int index);
 
 #define PROMPTMAX 32
 #define MAXARGS 10

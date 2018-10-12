@@ -81,3 +81,12 @@ void *watchmail_thread(void *param){
   }
   return NULL;
 }
+
+void freeWatchmailList(watchmailElement *watchmailHead){
+  watchmailElement *tmp;
+  while (watchmailHead != NULL){
+    tmp = watchmailHead;
+    watchmailHead = watchmailHead->next;
+    free(tmp);
+  }
+}

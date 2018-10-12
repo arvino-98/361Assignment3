@@ -60,8 +60,12 @@ int sh( int argc, char **argv, char **envp )
   // copy of stdin
   int stdin_copy = dup(0);
 
+  char **leftArgs = calloc(MAXARGS, sizeof(char*));
+  char **rightArgs = calloc(MAXARGS, sizeof(char*));
+
   while ( go )
   {
+
     // redirect input and output back to standard in case of change
     close(0);
     dup(stdin_copy);
@@ -110,6 +114,13 @@ int sh( int argc, char **argv, char **envp )
       }
       // end checking redirect
 
+      // ipc code
+      int ipcAt = ipcPosition(args);
+      if (ipcAt != -1){
+        cutArray(leftArgs, rightArgs, args, ipcAt);
+      }
+      // ipc code end
+
       // check if command is an alias
       if (aliasHead != NULL){
         AliasList *temp = aliasHead;
@@ -152,6 +163,7 @@ int sh( int argc, char **argv, char **envp )
         freePrevDirectory();
         freeList(head);
         freeAliasList(aliasHead);
+        freeWatchmailList(watchmailHead);
         exit(0);
       }
       // where called seperately because it was defined in sh.c
@@ -358,10 +370,8 @@ void sigchld_handler(int sig){
 
 void redirectToScreen(){
   int fid = open("/dev/tty", O_WRONLY);
-  //close(0);
   close(1);
   close(2);
-  //dup(fid);
   dup(fid);
   dup(fid);
   close(fid);
@@ -421,4 +431,27 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
   else {
     printf("no clobber is 1. No file overwriting or creating allowed.\n");
   }
+}
+
+int ipcPosition(char **args){
+  int i = 0;
+  while (args[i] != NULL){
+    if (args[i][0] == '|'){
+      return i;
+    }
+    i++;
+  }
+  return -1;
+}
+void cutArray(char **leftArgs, char **rightArgs, char **args, int index){
+  int argsSize = 0;
+  while (args[argsSize] != NULL){
+    argsSize++;
+  }
+
+  //char **leftArgsTmp = malloc((argsSize/2) * sizeof(char *));
+  //char **rightArgsTmp = malloc((argsSize/2) * sizeof(char *));
+
+  memcpy(leftArgs, args, (argsSize/2) * sizeof(char *));
+  memcpy(rightArgs, args + index + 1, (argsSize/2) * sizeof(char *));
 }

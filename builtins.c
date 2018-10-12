@@ -229,7 +229,7 @@ void bic_watchuser(char **args){
     watchuserThread = pthread_create(&watchuserThread, NULL, watchuser_thread, NULL);
     threadRunning = 1;
   }
-  // if given 3 arguments
+  // if given 2 arguments
   if (args[2] != NULL){
     // check if it's 'off'
     if (strcmp(args[2], "off") == 0){

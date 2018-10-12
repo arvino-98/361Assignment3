@@ -13,3 +13,5 @@ watchmailElement *watchmailHead;
 void control_watchmail(char *file, int start);
 
 void* watchmail_thread(void *param);
+
+void freeWatchmailList(watchmailElement *watchmailHead);
