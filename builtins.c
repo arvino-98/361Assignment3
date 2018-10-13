@@ -271,8 +271,8 @@ void bic_watchmail(char **args){
   char *file;
 
   // if not enough or too many arguments
-  if (args[1] == NULL || args[3] != NULL){
-    printf("Invalid arguments.");
+  if (args[1] == NULL){
+    printf("Requires at least 1 argument.\n");
     return;
   }
 

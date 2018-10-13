@@ -462,15 +462,20 @@ int redirectPosition(char **args){
 
 // closes and opens proper file descriptors according to redirect symbols
 void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
+  int fid;
+  if(strcmp(redirectSymbol, "<") == 0){
+    fid = open(filename, O_RDONLY, S_IRUSR);
+    close(0);
+    fflush(0);
+    dup(fid);
+    close(fid);
+  }
   if (noclobber == 0){
-    int fid;
     if (strcmp(redirectSymbol, ">") == 0){
-      if (noclobber == 0){
-        fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
-        close(1);
-        dup(fid);
-        close(fid);
-      }
+      fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+      close(1);
+      dup(fid);
+      close(fid);
     }
     else if (strcmp(redirectSymbol, ">&") == 0){
       fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
@@ -494,16 +499,54 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
       dup(fid);
       close(fid);
     }
-    else if(strcmp(redirectSymbol, "<") == 0){
-      fid = open(filename, O_RDONLY, S_IRUSR);
-      close(0);
-      fflush(0);
-      dup(fid);
-      close(fid);
-    }
   }
   else {
-    printf("no clobber is 1. No file overwriting or creating allowed.\n");
+    if (strcmp(redirectSymbol, ">") == 0){
+      if ((fid = open(filename, O_WRONLY|O_TRUNC, S_IRWXU)) != -1){
+        printf("%s: noclobber is set. File exists\n", filename);
+      }
+      else {
+        fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+        close(1);
+        dup(fid);
+        close(fid);
+      }
+    }
+    else if (strcmp(redirectSymbol, ">&") == 0){
+      if ((fid = open(filename, O_WRONLY|O_TRUNC, S_IRWXU)) != -1){
+        printf("%s: noclobber is set. No file overwrite allowed\n", filename);
+      }
+      else {
+        fid = open(filename, O_CREAT|O_WRONLY, S_IRWXU);
+        close(1);
+        close(2);
+        dup(fid);
+        dup(fid);
+        close(fid);
+      }
+    }
+    else if (strcmp(redirectSymbol, ">>") == 0){
+      if ((fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU)) != -1){
+        close(1);
+        dup(fid);
+        close(fid);
+      }
+      else {
+        fprintf(stderr, "noclobber is set. No creation allowed when appending\n");
+      }
+    }
+    else if (strcmp(redirectSymbol, ">>&") == 0){
+      if ((fid = open(filename, O_APPEND|O_WRONLY, S_IRWXU)) != -1){
+        close(1);
+        close(2);
+        dup(fid);
+        dup(fid);
+        close(fid);
+      }
+      else {
+        fprintf(stderr, "noclobber is set. No creation allowed when appending\n");
+      }
+    }
   }
 }
 
