@@ -63,6 +63,9 @@ int sh( int argc, char **argv, char **envp )
   char **leftArgs = calloc(MAXARGS, sizeof(char*));
   char **rightArgs = calloc(MAXARGS, sizeof(char*));
 
+  int fid;
+  int filedes[2];
+
   while ( go )
   {
 
@@ -118,6 +121,21 @@ int sh( int argc, char **argv, char **envp )
       int ipcAt = ipcPosition(args);
       if (ipcAt != -1){
         cutArray(leftArgs, rightArgs, args, ipcAt);
+        args[ipcAt] = NULL;
+
+        if(pipe(filedes) == -1){
+          perror("Error creating pipe");
+          return -1;
+        }
+
+        close(0);
+        dup(filedes[0]);
+        close(filedes[0]);
+
+        close(1);
+        dup(filedes[1]);
+
+        close(filedes[1]);
       }
       // ipc code end
 
@@ -143,8 +161,6 @@ int sh( int argc, char **argv, char **envp )
       // end checking alias
       // if an alias was found, the values of command and *args
       // have been modifies to match the alias
-
-      //checkWildcard(args);
 
       /* now check for each built in command and implement */
       // if exit, free all allocated space
@@ -291,11 +307,42 @@ int sh( int argc, char **argv, char **envp )
       }
       // end finding program to exec
     }
-
     // if command was null just move back to beginning of loop
     else {
       continue;
     }
+
+    fid = open("/dev/tty", O_WRONLY);
+    close(1);
+    dup(fid);
+    close(fid);
+
+    fid = open("/dev/tty", O_WRONLY);
+    close(2);
+    dup(fid);
+    close(fid);
+
+    if (rightArgs[0] != NULL){
+      printf("Executing right args: %s\n", rightArgs[0]);
+      if ((pid = fork()) < 0) {
+        perror("Fork error");
+      }
+      /* child */
+      else if (pid == 0) {
+        execv(which(rightArgs[0], pathlist), rightArgs);
+        perror("Couldn't execute");
+        kill(pid, SIGCHLD);
+        exit(127);
+      }
+      /* parent */
+      signal(SIGCHLD, sigchld_handler);
+    }
+    rightArgs[0] = NULL;
+
+    fid = open("/dev/tty", O_RDONLY);
+    close(0);
+    dup(fid);
+    close(fid);
   }
   return 0;
 } /* sh() */
@@ -487,5 +534,5 @@ void executeIPC(char **leftArgs, char **rightArgs){
 
   close(filedes[1]);
 
-  
+
 }
