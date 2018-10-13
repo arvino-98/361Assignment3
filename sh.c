@@ -60,9 +60,7 @@ int sh( int argc, char **argv, char **envp )
   // copy of stdin
   int stdin_copy = dup(0);
 
-  char **leftArgs = calloc(MAXARGS, sizeof(char*));
   char **rightArgs = calloc(MAXARGS, sizeof(char*));
-
   int fid;
   int filedes[2];
 
@@ -120,24 +118,35 @@ int sh( int argc, char **argv, char **envp )
       // ipc code
       int ipcAt = ipcPosition(args);
       if (ipcAt != -1){
-        cutArray(leftArgs, rightArgs, args, ipcAt);
-        args[ipcAt] = NULL;
+        // split array after ipc symbol into rightArgs
+        cutArray(rightArgs, args, ipcAt);
 
         if(pipe(filedes) == -1){
           perror("Error creating pipe");
           return -1;
         }
 
+        // Redirect stdin
         close(0);
         dup(filedes[0]);
         close(filedes[0]);
 
+        // Redirect stdout
         close(1);
         dup(filedes[1]);
 
+        // Redirect stderr if necessary
+        if (strcmp(args[ipcAt], "|&") == 0){
+          close(2);
+          dup(filedes[1]);
+        }
+
         close(filedes[1]);
+
+        // terminate args array at ipc symbol
+        args[ipcAt] = NULL;
       }
-      // ipc code end
+      // ipc code end. proceed to check for execution normally
 
       // check if command is an alias
       if (aliasHead != NULL){
@@ -281,7 +290,7 @@ int sh( int argc, char **argv, char **envp )
         }
         // end normal execution
 
-        // if there is an ampersand, execute in background
+        // else if there is an ampersand, execute in background
         else if (commandpath != NULL && ((ampersandAt=endsInAmpersand(args)) != -1)){
           //printf("ends in &\n");
           args[ampersandAt] = NULL;
@@ -307,23 +316,27 @@ int sh( int argc, char **argv, char **envp )
       }
       // end finding program to exec
     }
-    // if command was null just move back to beginning of loop
+
+    // if command was null just start moving back to beginning of loop
     else {
       continue;
     }
 
-    fid = open("/dev/tty", O_WRONLY);
-    close(1);
-    dup(fid);
-    close(fid);
-
-    fid = open("/dev/tty", O_WRONLY);
-    close(2);
-    dup(fid);
-    close(fid);
-
+    // execute right-side argument if commandline contained ipc symbol
     if (rightArgs[0] != NULL){
-      printf("Executing right args: %s\n", rightArgs[0]);
+      // Return stdout to terminal
+      fid = open("/dev/tty", O_WRONLY);
+      close(1);
+      dup(fid);
+      close(fid);
+
+      // Return sterr to terminal
+      fid = open("/dev/tty", O_WRONLY);
+      close(2);
+      dup(fid);
+      close(fid);
+
+      //printf("Executing right args: %s\n", rightArgs[0]);
       if ((pid = fork()) < 0) {
         perror("Fork error");
       }
@@ -331,18 +344,21 @@ int sh( int argc, char **argv, char **envp )
       else if (pid == 0) {
         execv(which(rightArgs[0], pathlist), rightArgs);
         perror("Couldn't execute");
-        kill(pid, SIGCHLD);
         exit(127);
       }
       /* parent */
-      signal(SIGCHLD, sigchld_handler);
+      if ((pid = waitpid(pid, &status, 0)) < 0){
+        perror("Wait error");
+      }
     }
     rightArgs[0] = NULL;
-
+    // Return stdin to terminal
     fid = open("/dev/tty", O_RDONLY);
     close(0);
     dup(fid);
     close(fid);
+    // end right-side executions
+
   }
   return 0;
 } /* sh() */
@@ -503,36 +519,13 @@ int ipcPosition(char **args){
   return -1;
 }
 
-// cuts args array at the given index. values before the index go into leftArgs,
+// cuts args array at the given index
 // values after the index go into rightArgs
-void cutArray(char **leftArgs, char **rightArgs, char **args, int index){
+void cutArray(char **rightArgs, char **args, int index){
   int argsSize = 0;
   while (args[argsSize] != NULL){
     argsSize++;
   }
 
-  memcpy(leftArgs, args, (argsSize/2) * sizeof(char *));
   memcpy(rightArgs, args + index + 1, (argsSize/2) * sizeof(char *));
-}
-void executeIPC(char **leftArgs, char **rightArgs){
-  int fid;
-  int filedes[2];
-
-  if (pipe(filedes) == -1){
-    perror("Error creating pipe");
-    return;
-  }
-
-  // redirect stdin
-  close(0);
-  dup(filedes[0]);
-  close(filedes[0]);
-
-  // Redirect stdout
-  close(1);
-  dup(filedes[1]);
-
-  close(filedes[1]);
-
-
 }
