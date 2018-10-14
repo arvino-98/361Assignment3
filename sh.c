@@ -291,6 +291,7 @@ int sh( int argc, char **argv, char **envp )
         // end normal execution
 
         // else if there is an ampersand, execute in background
+        // by using our defined sigchld_handler
         else if (commandpath != NULL && ((ampersandAt=endsInAmpersand(args)) != -1)){
           //printf("ends in &\n");
           args[ampersandAt] = NULL;
@@ -433,6 +434,8 @@ int endsInAmpersand(char **args){
   }
 }
 
+// custom signchld_handler using WNOHANG
+// this will make the process will return immediately
 void sigchld_handler(int sig){
   signal(SIGCHLD, sigchld_handler);
   waitpid(-1, NULL, WNOHANG);
@@ -503,7 +506,7 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
   else {
     if (strcmp(redirectSymbol, ">") == 0){
       if ((fid = open(filename, O_WRONLY|O_TRUNC, S_IRWXU)) != -1){
-        printf("%s: noclobber is set. File exists\n", filename);
+        fprintf(stderr, "%s: noclobber is set. File exists\n", filename);
       }
       else {
         fid = open(filename, O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
@@ -514,7 +517,7 @@ void checkRedirect(char *redirectSymbol, char *filename, int noclobber){
     }
     else if (strcmp(redirectSymbol, ">&") == 0){
       if ((fid = open(filename, O_WRONLY|O_TRUNC, S_IRWXU)) != -1){
-        printf("%s: noclobber is set. No file overwrite allowed\n", filename);
+        fprintf(stderr, "%s: noclobber is set. No file overwrite allowed\n", filename);
       }
       else {
         fid = open(filename, O_CREAT|O_WRONLY, S_IRWXU);

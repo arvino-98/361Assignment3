@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+// creates or stops a watchmail thread
 void control_watchmail(char *file, int start){
   // if disable is false we create a new watchmail and thread
   if (start == 0){
@@ -54,6 +55,7 @@ void control_watchmail(char *file, int start){
    }
  }
 
+// thread that will monitor our file
 void *watchmail_thread(void *param){
   char* filename = (char*)param;
   // will hold our file's info
@@ -82,6 +84,7 @@ void *watchmail_thread(void *param){
   return NULL;
 }
 
+// free all allocated memory from the wathmail linked list
 void freeWatchmailList(watchmailElement *watchmailHead){
   watchmailElement *tmp;
   while (watchmailHead != NULL){

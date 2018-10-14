@@ -258,6 +258,7 @@ void bic_watchuser(char **args){
     watchuserElement *new_node = (watchuserElement*)malloc(sizeof(watchuserElement));
     new_node->username = (char*)malloc(strlen(args[1]) + 1);
     strcpy(new_node->username, args[1]);
+    new_node->watched = 0;
     new_node->next = watchuserHead;
     watchuserHead = new_node;
   }

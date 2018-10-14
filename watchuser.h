@@ -7,6 +7,7 @@
 
 typedef struct watchuserElement {
   char* username;
+  int watched;
   struct watchuserElement* next; ///< Pointer to next node
 }watchuserElement;
 
